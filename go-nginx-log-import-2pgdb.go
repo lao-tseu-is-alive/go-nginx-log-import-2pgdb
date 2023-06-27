@@ -76,7 +76,7 @@ func main() {
 	defer file.Close()
 
 	// NGINX “combined” log format: http://nginx.org/en/docs/http/ngx_http_log_module.html#log_format
-	var myNginxRegex = regexp.MustCompile(`^(?P<remote_addr>[^ ]+)\s-\s(?P<remote_user>[^ ]+)\s\[(?P<time_local>[^\]]+)\]\s"(?P<request>[^"]*)"\s(?P<status>\d{1,3})\s(?P<body_bytes_send>\d+)\s"(?P<http_referer>[^"]*)"\s"(?P<http_user_agent>[^"]*)"`)
+	var myNginxRegex = regexp.MustCompile(`^(?P<remote_addr>[^ ]+)\s-\s(?P<remote_user>[^ ]+)\s\[(?P<time_local>[^\]]+)\]\s"(?P<request>[^"]*)"\s(?P<status>\d{1,3})\s(?P<body_bytes_send>\d+)\s"(?P<http_referer>[^"]+)"\s"(?P<http_user_agent>[^"]+)"`)
 	var myDateTimeRegex = regexp.MustCompile("^(?P<day>\\d{1,2})\\/(?P<month>\\w{1,3})\\/(?P<year>\\d{2,4}):(?P<hour>\\d{1,2}):(?P<minute>\\d{1,2}):(?P<second>\\d{1,2})")
 
 	l.Printf("# INFO: 'about to read log file : %s'\n", logPath)
@@ -89,6 +89,7 @@ func main() {
 		if numLine%5 == 0 {
 			l.Printf("# DEBUG: 'handling line number: %d'\n", numLine)
 		}
+		// fmt.Printf("[%8d]\t%s\n", numLine, line)
 		match := myNginxRegex.FindStringSubmatch(line)
 		nginxCombinedFields := make(map[string]string)
 		for i, name := range myNginxRegex.SubexpNames() {
@@ -140,11 +141,10 @@ func main() {
 					nginxCombinedFields["http_user_agent"],
 				)
 			}
-		} else {
-			badLines++
-			l.Printf("# 💥💥 WARNING: 'unusual http request found on line %d of : %s'\n", numLine, logPath)
-			l.Printf("# 💥💥 DISCARDED_LINE [%d]:\t%s\n", numLine, line)
 		}
+		badLines++
+		l.Printf("# 💥💥 WARNING: 'unusual http request found on line %d of : %s'\n", numLine, logPath)
+		l.Printf("# 💥💥 DISCARDED_LINE [%d]:\t%s\n", numLine, line)
 	}
 	l.Printf("# INFO: 'imported %d lines (%d rejected lines with strange request)   log file : %s'\n", goodLines, badLines, logPath)
 }
